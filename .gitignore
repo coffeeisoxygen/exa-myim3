@@ -11,3 +11,4 @@ wheels/
 .github/
 .env
 *.png
+.vscode/
