@@ -12,3 +12,4 @@ wheels/
 .env
 *.png
 .vscode/
+logs/
