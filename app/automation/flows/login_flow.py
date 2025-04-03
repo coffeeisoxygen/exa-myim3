@@ -30,7 +30,7 @@ def login_flow(device_service, serial: str, phone_number: str) -> bool:
         phone_number: Nomor telepon untuk login
 
     Returns:
-        bool: True jika login berhasil, False jika gagal
+        bool: True jika login berhasil (termasuk ke OTP), False jika gagal
     """
     logger = get_device_logger(serial)
     ui_device = device_service.get_ui_device(serial)
@@ -61,8 +61,8 @@ def login_flow(device_service, serial: str, phone_number: str) -> bool:
     if not click_continue(ui_device, RESOURCE_IDS["continue_button"], serial):
         return False
 
-    # 6. Verifikasi login berhasil
-    if not verify_login_success(ui_device, RESOURCE_IDS["home_indicator"], serial):
+    # 6. Verifikasi login berhasil (bisa ke OTP atau home)
+    if not verify_login_success(ui_device, RESOURCE_IDS, serial):
         return False
 
     logger.info(f"Login berhasil untuk nomor {phone_number}")

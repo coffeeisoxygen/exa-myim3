@@ -1,11 +1,12 @@
 import logging
+import os
 import threading
 from typing import Dict, List
 
 import uiautomator2 as u2
 from ppadb.client import Client
 
-from app.config import ADB_HOST, ADB_PORT
+from app.config import ADB_HOST, ADB_PORT, ANDROID_SDK_PATH
 from app.devices.command import (
     get_battery_info,
     get_device_properties,
@@ -31,6 +32,57 @@ class DeviceService:
         self.device_cache = {}  # Cache for uiautomator2 device objects
         self.lock = threading.Lock()  # Thread safety for device cache
 
+    def ensure_adb_running(self) -> bool:
+        """
+        Memastikan ADB server berjalan, jika tidak akan dicoba untuk memulainya.
+
+        Returns:
+            bool: True jika berhasil, False jika gagal
+        """
+        try:
+            # Coba koneksi ke ADB server
+            self.adb_client.version()
+            logger.info("ADB server sudah berjalan")
+            return True
+        except Exception as e:
+            logger.warning(f"ADB server tidak berjalan: {e}")
+
+            # Coba jalankan adb start-server
+            try:
+                import subprocess
+
+                # Coba beberapa kemungkinan path adb
+                adb_paths = [
+                    os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb.exe"),
+                    os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb"),
+                    "adb.exe",  # Coba di PATH
+                    "adb",  # Coba di PATH
+                ]
+
+                for adb_path in adb_paths:
+                    try:
+                        logger.info(f"Mencoba menjalankan: {adb_path} start-server")
+                        result = subprocess.run(
+                            [adb_path, "start-server"],
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                        )
+
+                        if result.returncode == 0:
+                            logger.info("ADB server berhasil dijalankan")
+                            return True
+                    except FileNotFoundError:
+                        continue
+
+                logger.error(
+                    "Gagal menjalankan ADB server - adb executable tidak ditemukan"
+                )
+                return False
+            except Exception as e:
+                logger.error(f"Gagal menjalankan ADB server: {e}")
+                return False
+
     def get_device(self, serial: str):
         """Get an ADB device by serial number.
 
@@ -53,6 +105,11 @@ class DeviceService:
         Returns:
             List of Device objects
         """
+        # Pastikan ADB server berjalan
+        if not self.ensure_adb_running():
+            logger.error("Tidak dapat mendapatkan devices: ADB server tidak berjalan")
+            return []
+
         devices = []
         try:
             adb_devices = self.adb_client.devices()
