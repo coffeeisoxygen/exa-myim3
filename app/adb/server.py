@@ -1,9 +1,12 @@
 import logging
-import os
 import subprocess
 from typing import Tuple
 
-from app.config.settings import ANDROID_SDK_PATH
+from app.config.adb_config import (
+    ADB_DEVICE_DETECT_TIMEOUT,
+    ADB_SERVER_START_TIMEOUT,
+    get_adb_search_paths,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +25,8 @@ class ADBServer:
         Returns:
             Path ke adb executable
         """
-        # Coba cari di Android SDK path dan di PATH sistem
-        possible_paths = [
-            os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb.exe"),
-            os.path.join(ANDROID_SDK_PATH, "platform-tools", "adb"),
-            "adb.exe",  # Coba di PATH
-            "adb",  # Coba di PATH
-        ]
+        # Ambil semua kemungkinan path dari konfigurasi
+        possible_paths = get_adb_search_paths()
 
         for path in possible_paths:
             try:
@@ -57,7 +55,7 @@ class ADBServer:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=5,
+                timeout=ADB_DEVICE_DETECT_TIMEOUT,
             )
 
             return (
@@ -85,7 +83,7 @@ class ADBServer:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=ADB_SERVER_START_TIMEOUT,
             )
 
             success = result.returncode == 0

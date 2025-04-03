@@ -1,11 +1,10 @@
-import os
-
-# ADB config
-ADB_HOST = "127.0.0.1"
-ADB_PORT = 5037
-
-# Path ke Android SDK (jika ada, atau kosong jika menggunakan yang di PATH)
-ANDROID_SDK_PATH = os.environ.get("ANDROID_SDK_PATH", "")
-
-# Package aplikasi default
+# Application-wide settings
 DEFAULT_PACKAGE = "com.pure.indosat.care"
+
+# Database performance settings
+DB_POOL_SIZE = 5
+DB_MAX_OVERFLOW = 10
+
+# Automation flow settings
+RETRY_ATTEMPTS = 3
+WAIT_TIMEOUT = 30  # Seconds to wait for UI elements
