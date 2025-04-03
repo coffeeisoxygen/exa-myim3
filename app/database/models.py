@@ -4,6 +4,10 @@ from typing import Optional
 from sqlmodel import Field, SQLModel
 
 
+#class User
+
+
+
 # Device Model
 class Device(SQLModel, table=True):
     """device android yang akan menjalan kan otomatisasi"""
