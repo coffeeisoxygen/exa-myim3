@@ -3,16 +3,11 @@ from typing import Optional
 
 from sqlmodel import Field, SQLModel
 
-
-#class User
-
-
-
 # Device Model
 class Device(SQLModel, table=True):
     """device android yang akan menjalan kan otomatisasi"""
 
-    serial: str = Field(primary_key=True, unique=True)
+    serial: str = Field(primary_key=True, unique=True,index=True)
     model: str
     manufacturer: str
     name: str
