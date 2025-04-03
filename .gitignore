@@ -16,3 +16,4 @@ logs/
 secret/
 .docs/
 idea.py
+deprecated/

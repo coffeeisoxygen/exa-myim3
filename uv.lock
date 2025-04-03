@@ -346,7 +346,6 @@ dependencies = [
     { name = "fastapi" },
     { name = "htmx" },
     { name = "psutil" },
-    { name = "pure-python-adb" },
     { name = "pytest" },
     { name = "sqlalchemy" },
     { name = "sqlmodel" },
@@ -359,7 +358,6 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "htmx", specifier = ">=0.0.0" },
     { name = "psutil", specifier = ">=7.0.0" },
-    { name = "pure-python-adb", specifier = ">=0.3.0.dev0" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "sqlalchemy", specifier = ">=2.0.40" },
     { name = "sqlmodel", specifier = ">=0.0.24" },
@@ -920,12 +918,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/50/e6/eecf58810b9d12e6427369784efe814a1eec0f492084ce8eb8f4d89d6d61/psutil-7.0.0-cp37-abi3-win32.whl", hash = "sha256:ba3fcef7523064a6c9da440fc4d6bd07da93ac726b5733c29027d7dc95b39d99", size = 241053 },
     { url = "https://files.pythonhosted.org/packages/50/1b/6921afe68c74868b4c9fa424dad3be35b095e16687989ebbb50ce4fceb7c/psutil-7.0.0-cp37-abi3-win_amd64.whl", hash = "sha256:4cf3d4eb1aa9b348dec30105c55cd9b7d4629285735a102beb4441e38db90553", size = 244885 },
 ]
-
-[[package]]
-name = "pure-python-adb"
-version = "0.3.0.dev0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0a/b7/1c4d6b2cbe499b4180177abcf3ae2bb2d8b36acf695ae7d8e9eb99ba00ea/pure-python-adb-0.3.0.dev0.tar.gz", hash = "sha256:0ecc89d780160cfe03260ba26df2c471a05263b2cad0318363573ee8043fb94d", size = 25680 }
 
 [[package]]
 name = "py"

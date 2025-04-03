@@ -1,56 +1,42 @@
+"""
+FastAPI application setup.
+"""
+
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config.constants import APP_NAME
-from app.config.database import create_db_and_tables
-from app.logging import initialize_logging
-from app.routes import main_router
-from app.services import service_manager
+from app.core.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
+from app.core.database import create_db_and_tables
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
 
-# Initialize app components
-def init_app():
-    """Initialize application components."""
-    # Initialize logging
-    initialize_logging(log_to_file=True)
-
-    # Create database tables
-    create_db_and_tables()
-
-
-# Create lifespan context manager
+# Define application lifespan events
+# Di app.py, tambahkan try-except di lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan events for the application."""
-    logger.info("Application startup...")
-
-    # Initialize app
-    init_app()
-
-    # Start services
-    await service_manager.start_services()
-
-    yield
-
-    # Shutdown services on app shutdown
-    logger.info("Application shutdown...")
-    await service_manager.stop_services()
+    try:
+        logger.info("Application startup...")
+        create_db_and_tables()
+        yield
+    except Exception as e:
+        logger.error(f"Error during application startup: {e}")
+        raise
+    finally:
+        logger.info("Application shutdown...")
 
 
-# Initialize application
+# Initialize FastAPI application
 app = FastAPI(
     title=APP_NAME,
-    description="Automation system for Android devices",
-    version="0.1.0",
+    description=APP_DESCRIPTION,
+    version=APP_VERSION,
     lifespan=lifespan,
 )
 
@@ -66,24 +52,20 @@ app.add_middleware(
 # Mount static files
 app.mount(
     "/static",
-    StaticFiles(directory=Path(__file__).parent / "templates" / "static"),
+    StaticFiles(directory=Path(__file__).parent / "web" / "templates" / "static"),
     name="static",
 )
 
-# Include all routes
-app.include_router(main_router)
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {"message": f"Welcome to {APP_NAME} API"}
 
 
-def main():
-    """Run the application server."""
-    uvicorn.run(
-        "app.app:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,  # Set to False in production
-        log_level="info",
-    )
-
-
-if __name__ == "__main__":
-    main()
+# Health check endpoint
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "ok"}
