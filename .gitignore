@@ -13,3 +13,4 @@ wheels/
 *.png
 .vscode/
 logs/
+secret/
