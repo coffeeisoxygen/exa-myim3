@@ -13,11 +13,11 @@ POPUP_CONFIGS = {
         "priority": 1,
     },
     "tutorial": {
-        "container_id": "com.pure.indosat.care:id/tutorialContainer",  # Ganti dengan ID sebenarnya
-        "close_button_id": "com.pure.indosat.care:id/btnSkipTutorial",  # Ganti dengan ID sebenarnya
+        "container_id": "com.pure.indosat.care:id/skip_layout",  # ID yang benar
+        "close_button_id": "com.pure.indosat.care:id/tvSkip",  # Tombol SKIP
+        "alt_button_id": "com.pure.indosat.care:id/tvNext",  # Tombol Next (alternatif)
         "priority": 2,
     },
-    # Tambahkan jenis popup lain sesuai kebutuhan
 }
 
 
@@ -74,7 +74,7 @@ def _handle_specific_popup(
     logger.info(f"Menangani popup {popup_type} (container: {config['container_id']})")
 
     # Coba strategi penanganan khusus untuk jenis popup ini jika ada
-    if popup_type == "tutorial" and "tutorial_handling" in globals():
+    if popup_type == "tutorial":
         return tutorial_handling(ui_device, container, config, logger)
 
     # Jika tidak ada strategi khusus, gunakan strategi default
@@ -137,27 +137,64 @@ def close_popup_by_default_position(ui_device, popup, logger) -> bool:
     return False
 
 
-# Contoh penanganan khusus untuk popup tutorial
 def tutorial_handling(ui_device, popup, config, logger) -> bool:
     """Penanganan khusus untuk popup tutorial."""
-    # Misalnya tutorial mungkin perlu swipe atau klik beberapa kali
     try:
-        # Cek apakah ada tombol "Skip All" atau semacamnya
-        skip_all = ui_device(text="Skip All")
-        if skip_all.exists:
-            skip_all.click()
-            logger.info("Klik 'Skip All' untuk melewati tutorial")
-            time.sleep(0.5)
-            if not popup.exists:
-                return True
+        if handle_skip_button(ui_device, popup, config, logger):
+            return True
 
-        # Jika tidak ada Skip All, gunakan close button biasa
-        return close_popup_by_button(
-            ui_device, popup, config["close_button_id"], logger
-        )
+        if handle_next_button(ui_device, popup, config, logger):
+            return True
+
+        if handle_skip_all(ui_device, popup, logger):
+            return True
+
+        return close_popup_by_default_position(ui_device, popup, logger)
+
     except Exception as e:
         logger.warning(f"Error saat menangani tutorial: {e}")
         return False
+
+
+def handle_skip_button(ui_device, popup, config, logger) -> bool:
+    """Coba tombol SKIP untuk melewati tutorial."""
+    skip_button = ui_device(resourceId=config["close_button_id"])
+    if skip_button.exists and skip_button.info.get("clickable", False):
+        skip_button.click()
+        logger.info("Klik tombol 'SKIP' untuk melewati tutorial")
+        time.sleep(0.5)
+        if not popup.exists:
+            return True
+    return False
+
+
+def handle_next_button(ui_device, popup, config, logger) -> bool:
+    """Coba tombol Next untuk melewati tutorial."""
+    if "alt_button_id" in config:
+        next_button = ui_device(resourceId=config["alt_button_id"])
+        if next_button.exists and next_button.info.get("clickable", False):
+            for i in range(5):  # Asumsi maksimal 5 langkah
+                next_button.click()
+                logger.info(f"Klik tombol 'Next' ({i + 1}) untuk langkah tutorial")
+                time.sleep(0.5)
+                if not popup.exists:
+                    logger.info(f"Tutorial berhasil dilewati setelah {i + 1} klik Next")
+                    return True
+                if handle_skip_button(ui_device, popup, config, logger):
+                    return True
+    return False
+
+
+def handle_skip_all(ui_device, popup, logger) -> bool:
+    """Coba dengan text 'Skip All' sebagai fallback."""
+    skip_all = ui_device(text="Skip All")
+    if skip_all.exists:
+        skip_all.click()
+        logger.info("Klik 'Skip All' untuk melewati tutorial")
+        time.sleep(0.5)
+        if not popup.exists:
+            return True
+    return False
 
 
 @log_action
@@ -177,7 +214,7 @@ def is_popup_visible(
     """
     if popup_type and popup_type in POPUP_CONFIGS:
         container_id = POPUP_CONFIGS[popup_type]["container_id"]
-        return ui_device(resourceId=container_id).exists()
+        return bool(ui_device(resourceId=container_id).exists)
 
     # Cek semua jenis popup
     for config in POPUP_CONFIGS.values():
