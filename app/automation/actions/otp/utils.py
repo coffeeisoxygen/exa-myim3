@@ -63,33 +63,46 @@ def check_otp_message(
     """
     logger = get_device_logger(serial)
 
-    # Cek pesan error/sukses
+    message_text = _get_message_text(ui_device, resource_ids, logger)
+    if message_text:
+        return _check_message_type(message_text, logger)
+
+    if _is_verification_complete(ui_device, resource_ids, logger):
+        return True, "success"
+
+    return True, "none"
+
+
+def _get_message_text(ui_device: u2.Device, resource_ids: dict, logger) -> str:
     message_element = ui_device(resourceId=resource_ids["message_text"])
     if message_element.exists:
         message_text = message_element.get_text()
         logger.info(f"Pesan terdeteksi: {message_text}")
+        return message_text
+    return ""
 
-        # Cek jenis pesan
-        for msg_type, patterns in OTP_MESSAGES.items():
-            for pattern in patterns:
-                if pattern.lower() in message_text.lower():
-                    if msg_type in ["invalid", "expired"]:
-                        logger.error(f"OTP {msg_type}: {message_text}")
-                        return False, msg_type
-                    elif msg_type == "sent":
-                        logger.info("OTP berhasil dikirim ulang")
-                        return True, msg_type
-                    elif msg_type == "success":
-                        logger.info("Verifikasi OTP berhasil")
-                        return True, msg_type
 
-    # Cek indikator sukses
+def _check_message_type(message_text: str, logger) -> Tuple[bool, str]:
+    for msg_type, patterns in OTP_MESSAGES.items():
+        for pattern in patterns:
+            if pattern.lower() in message_text.lower():
+                if msg_type in ["invalid", "expired"]:
+                    logger.error(f"OTP {msg_type}: {message_text}")
+                    return False, msg_type
+                elif msg_type == "sent":
+                    logger.info("OTP berhasil dikirim ulang")
+                    return True, msg_type
+                elif msg_type == "success":
+                    logger.info("Verifikasi OTP berhasil")
+                    return True, msg_type
+    return True, "none"
+
+
+def _is_verification_complete(ui_device: u2.Device, resource_ids: dict, logger) -> bool:
     if ui_device(resourceId=resource_ids["verification_complete_text"]).exists:
         logger.info("Verifikasi OTP berhasil terdeteksi")
-        return True, "success"
-
-    # Tidak ada pesan terdeteksi
-    return True, "none"
+        return True
+    return False
 
 
 @log_action

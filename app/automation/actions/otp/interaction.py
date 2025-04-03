@@ -136,61 +136,65 @@ def try_resend_otp(ui_device: u2.Device, resource_ids: dict, serial: str) -> boo
     """
     logger = get_device_logger(serial)
 
-    # Cek countdown dulu
+    if not _is_countdown_finished(ui_device, resource_ids, serial, logger):
+        return False
+
+    resend_button = _find_resend_button(ui_device, resource_ids, logger)
+    if not resend_button or not _is_button_enabled(resend_button, logger):
+        return False
+
+    resend_button.click()
+    logger.info("Klik tombol resend OTP")
+    time.sleep(2)
+
+    return _verify_resend_success(ui_device, resource_ids, serial, logger)
+
+
+def _is_countdown_finished(ui_device, resource_ids, serial, logger) -> bool:
     countdown_text = get_countdown_time(ui_device, resource_ids["countdown"], serial)
     if countdown_text == "N/A":
         logger.warning("Tidak dapat menentukan status countdown")
-    elif countdown_text != "00:00":
-        # Parse countdown time
+        return False
+    if countdown_text != "00:00":
         match = re.search(r"(\d+):(\d+)", countdown_text)
-        if match:
-            minutes = int(match.group(1))
-            seconds = int(match.group(2))
-            if minutes > 0 or seconds > 0:
-                logger.info(
-                    f"Masih ada waktu countdown ({countdown_text}), belum bisa resend"
-                )
-                return False
+        if match and (int(match.group(1)) > 0 or int(match.group(2)) > 0):
+            logger.info(
+                f"Masih ada waktu countdown ({countdown_text}), belum bisa resend"
+            )
+            return False
+    return True
 
-    # Coba temukan tombol resend
+
+def _find_resend_button(ui_device, resource_ids, logger):
     resend_button = ui_device(resourceId=resource_ids["resend_button"])
-
-    # Jika tidak ditemukan, coba dengan teks
     if not resend_button.exists:
-        # Coba berbagai kemungkinan teks untuk tombol resend
         for text in ["Resend OTP", "Kirim Ulang OTP", "Resend", "Kirim Ulang"]:
             resend_button = ui_device(text=text)
             if resend_button.exists:
                 break
-
     if not resend_button.exists:
         logger.error("Tombol resend OTP tidak ditemukan")
-        return False
+        return None
+    return resend_button
 
-    # Cek apakah tombol enabled
-    if not resend_button.info.get("enabled", True):
+
+def _is_button_enabled(button, logger) -> bool:
+    if not button.info.get("enabled", True):
         logger.error("Tombol resend OTP tidak enabled")
         return False
+    return True
 
-    # Klik tombol resend
-    resend_button.click()
-    logger.info("Klik tombol resend OTP")
 
-    # Tunggu sebentar dan verifikasi
-    time.sleep(2)
-
-    # Verifikasi apakah resend sukses (bisa dilihat dari reset countdown)
+def _verify_resend_success(ui_device, resource_ids, serial, logger) -> bool:
     new_countdown = get_countdown_time(ui_device, resource_ids["countdown"], serial)
-    if (
-        new_countdown != countdown_text
-        and new_countdown != "00:00"
-        and new_countdown != "N/A"
-    ):
+    if new_countdown not in ["00:00", "N/A"]:
         logger.info(f"Resend OTP berhasil, countdown reset ke {new_countdown}")
         return True
+    elif new_countdown == "00:00":
+        logger.warning("Countdown tidak berubah, resend mungkin gagal")
+        return False
     else:
         logger.warning(
             f"Tidak dapat memverifikasi resend OTP berhasil, countdown: {new_countdown}"
         )
-        # Tetap return True karena kita sudah klik tombol resend
-        return True
+        return False
