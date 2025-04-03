@@ -4,6 +4,7 @@ Load configuration from environment variables or config files.
 """
 
 import os
+import secrets
 from pathlib import Path
 
 # Base paths
@@ -28,3 +29,8 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{ROOT_DIR}/exa_myim3.db")
 ADB_HOST = os.getenv("ADB_HOST", "127.0.0.1")
 ADB_PORT = int(os.getenv("ADB_PORT", "5037"))
 ANDROID_SDK_PATH = os.getenv("ANDROID_SDK_PATH", "")
+
+# Authentication
+AUTH_SECRET_KEY = os.getenv("AUTH_SECRET_KEY", secrets.token_hex(32))
+AUTH_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours

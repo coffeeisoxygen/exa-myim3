@@ -1,0 +1,68 @@
+{% extends "auth_base.html" %} {% block title %}Login{% endblock %} {% block
+content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <h1>Login</h1>
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Login</button>
+      </div>
+      <div id="login-error" class="error-message"></div>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const loginForm = document.getElementById("login-form");
+    const errorMessage = document.getElementById("login-error");
+
+    loginForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      errorMessage.textContent = "";
+
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        // Create form data for OAuth2 password flow
+        const formData = new FormData();
+        formData.append("username", username);
+        formData.append("password", password);
+
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || "Login failed");
+        }
+
+        const data = await response.json();
+
+        // Store token in cookie for middleware
+        document.cookie = `access_token=${data.access_token}; path=/; max-age=${
+          60 * 60 * 24
+        }`;
+
+        // Redirect to dashboard
+        window.location.href = "/dashboard";
+      } catch (error) {
+        console.error("Login error:", error);
+        errorMessage.textContent =
+          error.message || "Login failed. Please try again.";
+      }
+    });
+  });
+</script>
+{% endblock %}

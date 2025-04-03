@@ -1,0 +1,158 @@
+{% extends "base.html" %} {% block title %}Application Settings{% endblock %} {%
+block content %}
+<div class="container">
+  <h1>Application Settings</h1>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>ADB Configuration</h2>
+    </div>
+    <div class="card-body">
+      <form id="adb-settings-form">
+        <div class="form-group">
+          <label for="adb-path">ADB Path</label>
+          <input
+            type="text"
+            id="adb-path"
+            name="adb_path"
+            class="form-control"
+            placeholder="Path to ADB executable"
+          />
+          <small class="form-text">Leave empty to auto-detect</small>
+        </div>
+
+        <div class="form-group">
+          <label for="device-poll-interval"
+            >Device Poll Interval (seconds)</label
+          >
+          <input
+            type="number"
+            id="device-poll-interval"
+            name="device_poll_interval"
+            class="form-control"
+            min="1"
+            max="60"
+            value="10"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="adb-timeout">ADB Command Timeout (seconds)</label>
+          <input
+            type="number"
+            id="adb-timeout"
+            name="adb_server_timeout"
+            class="form-control"
+            min="5"
+            max="300"
+            value="30"
+          />
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+          <button type="button" id="test-adb" class="btn btn-secondary">
+            Test ADB Connection
+          </button>
+        </div>
+      </form>
+
+      <div id="adb-status" class="mt-3"></div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Fetch current settings
+  async function fetchSettings() {
+    try {
+      const response = await fetch("/api/settings");
+      if (!response.ok) {
+        throw new Error("Failed to fetch settings");
+      }
+      const settings = await response.json();
+
+      // Fill the form
+      document.getElementById("adb-path").value = settings.adb_path || "";
+      document.getElementById("device-poll-interval").value =
+        settings.device_poll_interval || 10;
+      document.getElementById("adb-timeout").value =
+        settings.adb_server_timeout || 30;
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      showStatus("error", "Failed to load settings");
+    }
+  }
+
+  // Save settings
+  async function saveSettings(formData) {
+    try {
+      const response = await fetch("/api/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(Object.fromEntries(formData)),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save settings");
+      }
+
+      showStatus("success", "Settings saved successfully");
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      showStatus("error", `Failed to save settings: ${error.message}`);
+    }
+  }
+
+  // Test ADB connection
+  async function testADB() {
+    showStatus("info", "Testing ADB connection...");
+
+    try {
+      const response = await fetch("/api/devices/adb-test");
+      if (!response.ok) {
+        throw new Error("ADB test failed");
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        showStatus(
+          "success",
+          `ADB test successful. Version: ${result.version}`
+        );
+      } else {
+        showStatus("error", `ADB test failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Error testing ADB:", error);
+      showStatus("error", `ADB test error: ${error.message}`);
+    }
+  }
+
+  // Show status message
+  function showStatus(type, message) {
+    const statusDiv = document.getElementById("adb-status");
+    statusDiv.className = `alert alert-${type}`;
+    statusDiv.textContent = message;
+  }
+
+  // Initialize
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchSettings();
+
+    // Form submission
+    document
+      .getElementById("adb-settings-form")
+      .addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        saveSettings(formData);
+      });
+
+    // Test ADB button
+    document.getElementById("test-adb").addEventListener("click", testADB);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Exa Application{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/auth.css') }}"
+    />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="auth-wrapper">
+      <div class="auth-header">
+        <img
+          src="{{ url_for('static', path='images/image.png') }}"
+          alt="Exa Logo"
+          class="auth-logo"
+        />
+      </div>
+      <div class="auth-content">{% block content %}{% endblock %}</div>
+      <div class="auth-footer">
+        <p>&copy; 2025 Exa MyIM3 Automation</p>
+      </div>
+    </div>
+
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

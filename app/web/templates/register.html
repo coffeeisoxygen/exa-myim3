@@ -1,0 +1,93 @@
+{% extends "auth_base.html" %} {% block title %}Register{% endblock %} {% block
+content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <h1>Register</h1>
+    <form id="register-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required />
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" />
+      </div>
+      <div class="form-group">
+        <label for="full_name">Full Name</label>
+        <input type="text" id="full_name" name="full_name" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+      </div>
+      <div class="form-group">
+        <label for="password_confirm">Confirm Password</label>
+        <input
+          type="password"
+          id="password_confirm"
+          name="password_confirm"
+          required
+        />
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Register</button>
+      </div>
+      <div class="form-footer">
+        Already have an account? <a href="/login">Login</a>
+      </div>
+      <div id="register-error" class="error-message"></div>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const registerForm = document.getElementById("register-form");
+    const errorMessage = document.getElementById("register-error");
+
+    registerForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      errorMessage.textContent = "";
+
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const fullName = document.getElementById("full_name").value;
+      const password = document.getElementById("password").value;
+      const passwordConfirm = document.getElementById("password_confirm").value;
+
+      // Basic validation
+      if (password !== passwordConfirm) {
+        errorMessage.textContent = "Passwords do not match";
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/users", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username,
+            email,
+            full_name: fullName,
+            password,
+            password_confirm: passwordConfirm,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || "Registration failed");
+        }
+
+        // Redirect to login on successful registration
+        window.location.href = "/login?registered=true";
+      } catch (error) {
+        errorMessage.textContent =
+          error.message || "Registration failed. Please try again.";
+      }
+    });
+  });
+</script>
+{% endblock %}

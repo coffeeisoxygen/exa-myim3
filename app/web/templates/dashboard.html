@@ -3,20 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sidebar Menu | CodingNepal</title>
-    <link rel="stylesheet" href="static/css/style.css" />
+    <title>{% block title %}Exa Application{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/style.css') }}"
+    />
     <!-- Linking Google fonts for icons -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
     />
+    {% block head %}{% endblock %}
+    <style>
+      main {
+        padding: 2rem; /* Add padding for better spacing */
+        margin-left: 270px; /* Adjust for sidebar width */
+      }
+    </style>
   </head>
   <body>
     <aside class="sidebar">
       <!-- Sidebar header -->
       <header class="sidebar-header">
         <a href="#" class="header-logo">
-          <img src="images/image.png" alt="Exa" />
+          <img
+            src="{{ url_for('static', path='images/image.png') }}"
+            alt="Exa"
+          />
         </a>
         <button class="toggler sidebar-toggler">
           <span class="material-symbols-rounded">chevron_left</span>
@@ -29,37 +42,37 @@
         <!-- Primary top nav -->
         <ul class="nav-list primary-nav">
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/dashboard" class="nav-link">
               <span class="nav-icon material-symbols-rounded">dashboard</span>
               <span class="nav-label">Dashboard</span>
             </a>
             <span class="nav-tooltip">Dashboard</span>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/transactions" class="nav-link">
               <span class="nav-icon material-symbols-rounded">slideshow</span>
               <span class="nav-label">Transaction</span>
             </a>
             <span class="nav-tooltip">Transaction</span>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/automation" class="nav-link">
               <span class="nav-icon material-symbols-rounded">robot_2</span>
               <span class="nav-label">Automation</span>
             </a>
             <span class="nav-tooltip">Automation</span>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/devices" class="nav-link">
               <span class="nav-icon material-symbols-rounded"
                 >phonelink_setup</span
               >
-              <span class="nav-label">devices</span>
+              <span class="nav-label">Devices</span>
             </a>
-            <span class="nav-tooltip">devices</span>
+            <span class="nav-tooltip">Devices</span>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/modems" class="nav-link">
               <span class="nav-icon material-symbols-rounded"
                 >signal_cellular_alt</span
               >
@@ -68,7 +81,7 @@
             <span class="nav-tooltip">Modem</span>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/database" class="nav-link">
               <span class="nav-icon material-symbols-rounded"
                 >database_search</span
               >
@@ -77,7 +90,7 @@
             <span class="nav-tooltip">Database</span>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/settings" class="nav-link">
               <span class="nav-icon material-symbols-rounded">settings</span>
               <span class="nav-label">Settings</span>
             </a>
@@ -96,7 +109,7 @@
             <span class="nav-tooltip">Profile</span>
           </li>
           <li class="nav-item">
-            <a href="#" class="nav-link">
+            <a href="/logout" class="nav-link">
               <span class="nav-icon material-symbols-rounded">logout</span>
               <span class="nav-label">Logout</span>
             </a>
@@ -105,7 +118,9 @@
         </ul>
       </nav>
     </aside>
+    <main>{% block content %}{% endblock %}</main>
     <!-- Script -->
-    <script src="static/js/scripts.js"></script>
+    <script src="{{ url_for('static', path='js/scripts.js') }}"></script>
+    {% block scripts %}{% endblock %}
   </body>
 </html>

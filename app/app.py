@@ -16,6 +16,10 @@ from app.core.events import event_bus
 from app.core.logging import initialize_logging
 from app.core.settings import settings_manager
 from app.devices.routes import router as device_router
+from app.user.routes import router as auth_router
+from app.web.auth import AuthMiddleware
+from app.web.routes import router as web_router
+
 # Initialize logging first
 initialize_logging(log_to_file=True, log_level=logging.DEBUG)
 
@@ -32,7 +36,6 @@ settings_manager.load_settings()
 logger.info("Settings loaded")
 
 # Only then import routes that depend on settings
-
 
 
 # Define application lifespan events
@@ -84,7 +87,10 @@ app.mount(
 )
 
 # Include routers
+app.include_router(web_router, tags=["Web UI"])
 app.include_router(device_router, prefix="/api/devices", tags=["Devices"])
+app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
+app.add_middleware(AuthMiddleware)
 
 
 # Root endpoint
