@@ -30,33 +30,62 @@ def initialize_logging(
     """
     # Configure root logger
     root_logger = logging.getLogger()
+
+    # Clear existing handlers to avoid duplicates
+    if root_logger.handlers:
+        for handler in root_logger.handlers:
+            root_logger.removeHandler(handler)
+
     root_logger.setLevel(log_level)
 
-    # Formatter
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    # Console formatter with colors for better readability
+    class ColorFormatter(logging.Formatter):
+        """Formatter adding colors to console output."""
 
-    # Console handler
+        COLORS = {
+            logging.DEBUG: "\033[36m",  # Cyan
+            logging.INFO: "\033[32m",  # Green
+            logging.WARNING: "\033[33m",  # Yellow
+            logging.ERROR: "\033[31m",  # Red
+            logging.CRITICAL: "\033[41m",  # Red background
+        }
+        RESET = "\033[0m"
+
+        def format(self, record):
+            log_fmt = (
+                self.COLORS.get(record.levelno, self.RESET)
+                + "%(levelname)s"
+                + self.RESET
+            )
+            log_fmt += " | %(asctime)s | %(name)s | %(message)s"
+            formatter = logging.Formatter(log_fmt, datefmt="%Y-%m-%d %H:%M:%S")
+            return formatter.format(record)
+
+    # Console handler with color formatting
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(formatter)
+    console_handler.setFormatter(ColorFormatter())
     root_logger.addHandler(console_handler)
 
-    # File handler (optional)
+    # File handler (optional) with detailed formatting
     if log_to_file:
+        file_formatter = logging.Formatter(
+            "%(asctime)s | %(levelname)-8s | %(name)s | %(filename)s:%(lineno)d | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
         file_handler = RotatingFileHandler(
             LOG_PATH,
             maxBytes=10 * 1024 * 1024,  # 10 MB
             backupCount=5,
         )
-        file_handler.setFormatter(formatter)
+        file_handler.setFormatter(file_formatter)
         root_logger.addHandler(file_handler)
 
     # Suppress noisy loggers
     logging.getLogger("asyncio").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
+    # Log initialization info
     logging.info(f"Logging initialized. Level: {logging.getLevelName(log_level)}")
     if log_to_file:
         logging.info(f"Logging to file: {LOG_PATH}")

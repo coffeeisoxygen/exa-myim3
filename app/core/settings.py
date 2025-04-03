@@ -55,6 +55,7 @@ class SettingsManager:
                     key=key, value=value, description=f"Default setting for {key}"
                 )
                 session.add(setting)
+                logger.debug(f"Created default setting: {key}={value}")
 
         session.commit()
 

@@ -12,24 +12,43 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.core.database import create_db_and_tables
+from app.core.events import event_bus
+from app.core.logging import initialize_logging
+from app.devices.routes import router as device_router
 
-# Setup logging
+# Initialize logging first
+initialize_logging(log_to_file=True, log_level=logging.DEBUG)
+
+# Setup logger after initialization
 logger = logging.getLogger(__name__)
+logger.info(f"Starting {APP_NAME} application")
 
 
 # Define application lifespan events
-# Di app.py, tambahkan try-except di lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Application lifespan events."""
     try:
-        logger.info("Application startup...")
+        logger.info("Application startup process began")
+
+        # Initialize database
         create_db_and_tables()
+
+        # Publish startup event to trigger all services
+        logger.info("Publishing app.startup event")
+        await event_bus.publish("app.startup")
+
+        logger.info("Application startup complete")
         yield
+
     except Exception as e:
-        logger.error(f"Error during application startup: {e}")
+        logger.error(f"Error during application startup: {e}", exc_info=True)
         raise
     finally:
-        logger.info("Application shutdown...")
+        # Cleanup on shutdown
+        logger.info("Application shutting down")
+        await event_bus.publish("app.shutdown")
+        logger.info("Application shutdown complete")
 
 
 # Initialize FastAPI application
@@ -56,11 +75,15 @@ app.mount(
     name="static",
 )
 
+# Include routers
+app.include_router(device_router, prefix="/api/devices", tags=["Devices"])
+
 
 # Root endpoint
 @app.get("/")
 async def root():
     """Root endpoint."""
+    logger.debug("Root endpoint called")
     return {"message": f"Welcome to {APP_NAME} API"}
 
 
@@ -68,4 +91,5 @@ async def root():
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {"status": "ok"}
+    logger.debug("Health check endpoint called")
+    return {"status": "ok", "version": APP_VERSION}

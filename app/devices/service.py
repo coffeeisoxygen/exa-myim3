@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 from app.core.database import get_session
 from app.core.events import event_bus
+from app.core.settings import settings_manager
 from app.devices.adb import adb_helper
 from app.devices.models import Device
 from app.devices.repository import DeviceRepository
@@ -20,21 +21,22 @@ class DeviceService:
         """Initialize device service."""
         self.devices_cache: List[Dict[str, str]] = []
         self._polling_task = None
-        self._polling_interval = 10  # seconds
+        self._polling_interval = int(settings_manager.get("device_poll_interval", "10"))
         self._stop_polling = asyncio.Event()
 
         # Subscribe to events
-        event_bus.subscribe("app.startup", self.on_startup)
-        event_bus.subscribe("app.shutdown", self.on_shutdown)
+        logger.debug("Subscribing device service to app events")
+        event_bus.subscribe("app.startup", self.on_app_startup)
+        event_bus.subscribe("app.shutdown", self.on_app_shutdown)
 
-    async def on_startup(self):
-        """Handler for application startup event."""
-        logger.info("Starting device service initialization")
+    async def on_app_startup(self):
+        """Handler untuk event startup aplikasi."""
+        logger.info("Device service handling app startup event")
         await self.initialize()
 
-    async def on_shutdown(self):
-        """Handler for application shutdown event."""
-        logger.info("Starting device service shutdown")
+    async def on_app_shutdown(self):
+        """Handler untuk event shutdown aplikasi."""
+        logger.info("Device service handling app shutdown event")
         await self.shutdown()
 
     async def initialize(self) -> bool:
@@ -44,6 +46,8 @@ class DeviceService:
         Returns:
             True if initialized successfully, False otherwise
         """
+        logger.info("Initializing device service...")
+
         # Initialize ADB
         if not adb_helper.initialize():
             logger.error("Failed to initialize ADB helper")
@@ -62,8 +66,11 @@ class DeviceService:
 
     async def shutdown(self) -> None:
         """Shutdown device service."""
+        logger.info("Shutting down device service...")
+
         # Stop polling
         if self._polling_task:
+            logger.debug("Stopping device polling task")
             self._stop_polling.set()
             try:
                 await self._polling_task
@@ -73,6 +80,7 @@ class DeviceService:
 
         # Kill ADB server
         if adb_helper.is_server_running():
+            logger.debug("Stopping ADB server")
             adb_helper.kill_server()
 
         logger.info("Device service shutdown complete")
@@ -88,6 +96,7 @@ class DeviceService:
             while not self._stop_polling.is_set():
                 try:
                     # Get connected devices from ADB
+                    logger.debug("Polling for connected devices")
                     devices = adb_helper.get_devices()
 
                     # Check for changes
@@ -118,6 +127,7 @@ class DeviceService:
                     pass
 
         # Start polling task
+        logger.debug("Creating device polling task")
         self._polling_task = asyncio.create_task(_poll_devices())
 
     def _has_device_changes(self, new_devices: List[Dict[str, str]]) -> bool:
@@ -223,7 +233,9 @@ class DeviceService:
             repository = DeviceRepository(session)
             return repository.get_by_serial(serial)
 
-    def _get_basic_device_info(self, device: Device, device_in_cache: Optional[Dict]) -> Dict:
+    def _get_basic_device_info(
+        self, device: Device, device_in_cache: Optional[Dict]
+    ) -> Dict:
         """Get basic information about a device."""
         return {
             "serial": device.serial,
