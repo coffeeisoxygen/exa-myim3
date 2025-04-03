@@ -14,14 +14,25 @@ from app.core.config import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from app.core.database import create_db_and_tables
 from app.core.events import event_bus
 from app.core.logging import initialize_logging
+from app.core.settings import settings_manager
 from app.devices.routes import router as device_router
-
 # Initialize logging first
 initialize_logging(log_to_file=True, log_level=logging.DEBUG)
 
 # Setup logger after initialization
 logger = logging.getLogger(__name__)
 logger.info(f"Starting {APP_NAME} application")
+
+# Initialize database and tables first - CRITICAL
+create_db_and_tables()
+logger.info("Database tables created")
+
+# Initialize settings after database creation
+settings_manager.load_settings()
+logger.info("Settings loaded")
+
+# Only then import routes that depend on settings
+
 
 
 # Define application lifespan events
@@ -30,9 +41,6 @@ async def lifespan(app: FastAPI):
     """Application lifespan events."""
     try:
         logger.info("Application startup process began")
-
-        # Initialize database
-        create_db_and_tables()
 
         # Publish startup event to trigger all services
         logger.info("Publishing app.startup event")

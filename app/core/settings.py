@@ -30,32 +30,44 @@ class SettingsManager:
         if self._loaded:
             return
 
-        with get_session() as session:
-            self._ensure_default_settings(session)
+        logger.info("Loading settings from database")
+        try:
+            with get_session() as session:
+                self._ensure_default_settings(session)
 
-            # Load all settings to cache
-            statement = select(Setting)
-            settings = session.exec(statement).all()
+                # Load all settings to cache
+                statement = select(Setting)
+                settings = session.exec(statement).all()
 
-            for setting in settings:
-                self._cache[setting.key] = setting.value
+                for setting in settings:
+                    self._cache[setting.key] = setting.value
 
+                self._loaded = True
+                logger.info(f"Loaded {len(settings)} settings from database")
+        except Exception as e:
+            logger.error(f"Error loading settings: {e}")
+            # Fallback to defaults if database access fails
+            for key, value in DEFAULT_SETTINGS.items():
+                self._cache[key] = value
+            logger.info("Using default settings due to database error")
             self._loaded = True
-            logger.info(f"Loaded {len(settings)} settings from database")
 
     def _ensure_default_settings(self, session: Session) -> None:
         """Ensure default settings exist in database."""
         for key, value in DEFAULT_SETTINGS.items():
-            statement = select(Setting).where(Setting.key == key)
-            setting = session.exec(statement).first()
+            try:
+                statement = select(Setting).where(Setting.key == key)
+                setting = session.exec(statement).first()
 
-            if setting is None:
-                # Create with default value
-                setting = Setting(
-                    key=key, value=value, description=f"Default setting for {key}"
-                )
-                session.add(setting)
-                logger.debug(f"Created default setting: {key}={value}")
+                if setting is None:
+                    # Create with default value
+                    setting = Setting(
+                        key=key, value=value, description=f"Default setting for {key}"
+                    )
+                    session.add(setting)
+                    logger.debug(f"Created default setting: {key}={value}")
+            except Exception as e:
+                logger.error(f"Error ensuring default setting {key}: {e}")
 
         session.commit()
 
@@ -64,32 +76,38 @@ class SettingsManager:
         if not self._loaded:
             self.load_settings()
 
-        return self._cache.get(key, default or "")
+        # Use provided default if key not in cache
+        return self._cache.get(key, default or DEFAULT_SETTINGS.get(key, "") or "")
 
     def set(self, key: str, value: str, description: Optional[str] = None) -> None:
         """Set setting value."""
-        with get_session() as session:
-            statement = select(Setting).where(Setting.key == key)
-            setting = session.exec(statement).first()
+        try:
+            with get_session() as session:
+                statement = select(Setting).where(Setting.key == key)
+                setting = session.exec(statement).first()
 
-            if setting:
-                setting.value = value
-                if description:
-                    setting.description = description
-                setting.updated_at = datetime.datetime.now()
-            else:
-                setting = Setting(
-                    key=key,
-                    value=value,
-                    description=description or f"Setting for {key}",
-                )
-                session.add(setting)
+                if setting:
+                    setting.value = value
+                    if description:
+                        setting.description = description
+                    setting.updated_at = datetime.datetime.now()
+                else:
+                    setting = Setting(
+                        key=key,
+                        value=value,
+                        description=description or f"Setting for {key}",
+                    )
+                    session.add(setting)
 
-            session.commit()
+                session.commit()
 
-            # Update cache
+                # Update cache
+                self._cache[key] = value
+                logger.info(f"Updated setting: {key}={value}")
+        except Exception as e:
+            logger.error(f"Error setting {key}={value}: {e}")
+            # Update cache anyway
             self._cache[key] = value
-            logger.info(f"Updated setting: {key}={value}")
 
 
 # Singleton instance

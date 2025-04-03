@@ -24,9 +24,13 @@ engine = create_engine(
 
 def create_db_and_tables() -> None:
     """Create database and tables."""
-    logger.info("Creating database tables...")
-    SQLModel.metadata.create_all(engine)
-    logger.info("Database tables created successfully")
+    try:
+        logger.info("Creating database tables...")
+        SQLModel.metadata.create_all(engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {e}", exc_info=True)
+        raise
 
 
 @contextmanager

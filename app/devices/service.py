@@ -21,7 +21,20 @@ class DeviceService:
         """Initialize device service."""
         self.devices_cache: List[Dict[str, str]] = []
         self._polling_task = None
-        self._polling_interval = int(settings_manager.get("device_poll_interval", "10"))
+
+        # Gunakan try-except untuk mengambil setting dengan fallback ke default
+        try:
+            self._polling_interval = int(
+                settings_manager.get("device_poll_interval", "10")
+            )
+            logger.debug(f"Using device poll interval: {self._polling_interval}s")
+        except Exception as e:
+            logger.warning(f"Error getting device poll interval setting: {e}")
+            self._polling_interval = 10  # Fallback default
+            logger.debug(
+                f"Using default device poll interval: {self._polling_interval}s"
+            )
+
         self._stop_polling = asyncio.Event()
 
         # Subscribe to events
